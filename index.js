@@ -11,13 +11,12 @@ const port = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-// Configure CORS
+// Example of CORS configuration
 app.use(cors({
-    origin: 'https://tech-rubix.vercel.app', // Allow only your frontend to access the backend
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    origin: 'https://tech-rubix.vercel.app', // Replace with your front-end URL
+    methods: ['GET', 'POST'],
     allowedHeaders: ['Content-Type', 'Authorization']
-  }));
-
+}));
 // MongoDB Connection URL
 const uri = process.env.MONGODB_URI;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
@@ -68,28 +67,40 @@ async function run() {
         app.post('/api/auth/login', async (req, res) => {
             const { email, password } = req.body;
 
-            // Find user by email
-            const user = await usersCollection.findOne({ email });
-            if (!user) {
-                return res.status(401).json({ message: 'Invalid email or password' });
+            try {
+                // Find user by email
+                const user = await usersCollection.findOne({ email });
+                if (!user) {
+                    return res.status(401).json({ message: 'Invalid email or password' });
+                }
+
+                // Compare hashed password
+                const isPasswordValid = await bcrypt.compare(password, user.password);
+                if (!isPasswordValid) {
+                    return res.status(401).json({ message: 'Invalid email or password' });
+                }
+
+                // Generate JWT token
+                const token = jwt.sign({
+                    first_name: user.first_name,
+                    last_name: user.last_name,
+                    email: user.email,
+                    role: user.role
+                }, process.env.JWT_SECRET, { expiresIn: process.env.EXPIRES_IN });
+
+                // Log successful login
+                console.log(`User ${email} logged in successfully.`);
+
+                // Respond with token
+                res.json({
+                    success: true,
+                    message: 'Login successful',
+                    token
+                });
+            } catch (error) {
+                console.error('Login error:', error);
+                res.status(500).json({ message: 'Internal Server Error' });
             }
-
-            // Compare hashed password
-            const isPasswordValid = await bcrypt.compare(password, user.password);
-            if (!isPasswordValid) {
-                return res.status(401).json({ message: 'Invalid email or password' });
-            }
-
-            const existingUser = await usersCollection.findOne({ email });
-            console.log('EXISTING user', existingUser);
-            // Generate JWT token
-            const token = jwt.sign({ first_name: existingUser.first_name, last_name: existingUser.last_name, email: existingUser.email, role: existingUser.role }, process.env.JWT_SECRET, { expiresIn: process.env.EXPIRES_IN });
-
-            res.json({
-                success: true,
-                message: 'Login successful',
-                token
-            });
         });
 
 
@@ -251,7 +262,7 @@ async function run() {
             const query = { _id: new ObjectId(search) };
             try {
                 const result = await productsCollection.find(query);
-                res.send({data : result.review});
+                res.send({ data: result.review });
             } catch (error) {
                 console.error(error);
                 res.status(500).send(error);
@@ -297,7 +308,7 @@ async function run() {
             }
         })
 
-         
+
         app.get(`/cart/:userEmail`, async (req, res) => {
             const search = req?.params?.userEmail;
             const query = { email: search }
