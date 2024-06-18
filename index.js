@@ -11,12 +11,7 @@ const port = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-// Example of CORS configuration
-app.use(cors({
-    origin: 'https://tech-rubix.vercel.app', // Replace with your front-end URL
-    methods: ['GET', 'POST'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-}));
+
 // MongoDB Connection URL
 const uri = process.env.MONGODB_URI;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
@@ -147,6 +142,13 @@ async function run() {
             const result = await productsCollection.find(search).sort(sortOptions).toArray();
             res.send(result);
         });
+
+        app.get('/all-products', async (req, res) => {
+            const search = {};
+            const result = await productsCollection.find(search).toArray();
+            res.send(result);
+        });
+
 
 
         // POST into FlashProducts
