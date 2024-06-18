@@ -48,7 +48,7 @@ async function run() {
 
             // Insert user into the database
             await usersCollection.insertOne({ first_name, last_name, email, password: hashedPassword });
-            const user_info = { first_name, last_name, email}
+            const user_info = { first_name, last_name, email }
             const token = jwt.sign(user_info, process.env.JWT_SECRET, { expiresIn: process.env.EXPIRES_IN });
             res.status(201).json({
                 success: true,
@@ -76,7 +76,7 @@ async function run() {
             const existingUser = await usersCollection.findOne({ email });
             console.log('EXISTING user', existingUser);
             // Generate JWT token
-            const token = jwt.sign({ first_name: existingUser.first_name,last_name: existingUser.last_name, email: existingUser.email, role: existingUser.role }, process.env.JWT_SECRET, { expiresIn: process.env.EXPIRES_IN });
+            const token = jwt.sign({ first_name: existingUser.first_name, last_name: existingUser.last_name, email: existingUser.email, role: existingUser.role }, process.env.JWT_SECRET, { expiresIn: process.env.EXPIRES_IN });
 
             res.json({
                 success: true,
@@ -102,24 +102,24 @@ async function run() {
         // FLASH_SALE PRODUCT - GET
         app.get('/flash-products', async (req, res) => {
             try {
-              const page = parseInt(req.query.page) || 1; // Default to page 1 if no page query parameter is provided
-              const limit = 10; // Number of products per page
-              const skip = (page - 1) * limit; // Calculate the number of documents to skip
-              const search = {flashsale: "true"};
-              const result = await productsCollection.find(search).skip(skip).limit(limit).toArray();
-              // Optionally, you can also return the total number of documents to help with client-side pagination calculations
-              const totalDocuments = await productsCollection.countDocuments(search);
-              res.send({
-                data: result,
-                totalDocuments,
-                totalPages: Math.ceil(totalDocuments / limit),
-                currentPage: page
-              });
+                const page = parseInt(req.query.page) || 1; // Default to page 1 if no page query parameter is provided
+                const limit = 10; // Number of products per page
+                const skip = (page - 1) * limit; // Calculate the number of documents to skip
+                const search = { flashsale: "true" };
+                const result = await productsCollection.find(search).skip(skip).limit(limit).toArray();
+                // Optionally, you can also return the total number of documents to help with client-side pagination calculations
+                const totalDocuments = await productsCollection.countDocuments(search);
+                res.send({
+                    data: result,
+                    totalDocuments,
+                    totalPages: Math.ceil(totalDocuments / limit),
+                    currentPage: page
+                });
             } catch (error) {
-              console.error(error);
-              res.status(500).send('An error occurred while fetching products');
+                console.error(error);
+                res.status(500).send('An error occurred while fetching products');
             }
-          });
+        });
 
 
         // TOP PRODUCT - GET
@@ -147,28 +147,28 @@ async function run() {
 
         app.get('/products', async (req, res) => {
             try {
-              const page = parseInt(req.query.page) || 1; // Default to page 1 if no page query parameter is provided
-              const limit = 10; // Number of products per page
-              const skip = (page - 1) * limit; // Calculate the number of documents to skip
-          
-              const search = {};
-              const result = await productsCollection.find(search).skip(skip).limit(limit).toArray();
-          
-              // Optionally, you can also return the total number of documents to help with client-side pagination calculations
-              const totalDocuments = await productsCollection.countDocuments(search);
-          
-              res.send({
-                data: result,
-                totalDocuments,
-                totalPages: Math.ceil(totalDocuments / limit),
-                currentPage: page
-              });
+                const page = parseInt(req.query.page) || 1; // Default to page 1 if no page query parameter is provided
+                const limit = 10; // Number of products per page
+                const skip = (page - 1) * limit; // Calculate the number of documents to skip
+
+                const search = {};
+                const result = await productsCollection.find(search).skip(skip).limit(limit).toArray();
+
+                // Optionally, you can also return the total number of documents to help with client-side pagination calculations
+                const totalDocuments = await productsCollection.countDocuments(search);
+
+                res.send({
+                    data: result,
+                    totalDocuments,
+                    totalPages: Math.ceil(totalDocuments / limit),
+                    currentPage: page
+                });
             } catch (error) {
-              console.error(error);
-              res.status(500).send('An error occurred while fetching products');
+                console.error(error);
+                res.status(500).send('An error occurred while fetching products');
             }
-          });
-          
+        });
+
 
 
 
@@ -227,12 +227,35 @@ async function run() {
             }
         });
 
+        app.get(`/products/:productId`, async (req, res) => {
+            const search = req?.params?.productId;
+            const query = { _id: new ObjectId(search) };
+            try {
+                const result = await productsCollection.findOne(query);
+                res.send(result);
+            } catch (error) {
+                console.error(error);
+                res.status(500).send(error);
+            }
+        });
+
+        app.get(`/products/:productId/reviews`, async (req, res) => {
+            const search = req?.params?.productId;
+            const query = { _id: new ObjectId(search) };
+            try {
+                const result = await productsCollection.find(query);
+                res.send({data : result.review});
+            } catch (error) {
+                console.error(error);
+                res.status(500).send(error);
+            }
+        });
+
         app.delete('/admin/user-delete/:userId', async (req, res) => {
             const search = req?.params?.userId;
             try {
                 const query = { _id: new ObjectId(search) };
                 const result = await usersCollection.deleteOne(query);
-                console.log(result);
                 res.send(result);
             } catch (error) {
                 console.error(error);
@@ -256,11 +279,11 @@ async function run() {
         });
 
 
-        app.post('/cart', async (req, res) => {
+        app.post('/add/cart', async (req, res) => {
             const query = req.body;
             try {
                 const result = await cartCollection.insertOne(query);
-                res.send({result , addedOne : true});
+                res.send({ result, addedOne: true });
             } catch (error) {
                 console.error(error);
                 res.status(500).send(error);
@@ -270,10 +293,9 @@ async function run() {
 
         app.get(`/cart/:userEmail`, async (req, res) => {
             const search = req?.params?.userEmail;
-            const query = { Email: search }
+            const query = { email: search }
             try {
                 const result = await cartCollection.find(query).toArray();
-                console.log(result)
                 res.send(result);
             } catch (error) {
                 console.error(error);
@@ -281,6 +303,18 @@ async function run() {
             }
         });
 
+
+        app.get(`/products/:productId`, async (req, res) => {
+            const search = req?.params?.productId;
+            const query = { _id: new ObjectId(search) };
+            try {
+                const result = await productsCollection.find(query).toArray();
+                res.send(result);
+            } catch (error) {
+                console.error(error);
+                res.status(500).send(error);
+            }
+        });
 
 
 
@@ -336,7 +370,6 @@ async function run() {
 
                 // If product found, send it as response
                 res.json(result);
-                console.log(result)
             } catch (error) {
                 console.error("Error retrieving product:", error);
                 res.status(500).json({ error: 'Internal Server Error' });
@@ -357,7 +390,7 @@ async function run() {
         // })
 
 
-       
+
 
         // app.get('/leaderboard', async (req, res) => {
         //     const search = {};
