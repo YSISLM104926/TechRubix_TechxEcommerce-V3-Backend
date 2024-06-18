@@ -11,6 +11,13 @@ const port = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
+// Configure CORS
+app.use(cors({
+    origin: 'https://tech-rubix.vercel.app', // Allow only your frontend to access the backend
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+  }));
+
 // MongoDB Connection URL
 const uri = process.env.MONGODB_URI;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
