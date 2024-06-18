@@ -290,12 +290,13 @@ async function run() {
             }
         })
 
-
+         
         app.get(`/cart/:userEmail`, async (req, res) => {
             const search = req?.params?.userEmail;
             const query = { email: search }
             try {
                 const result = await cartCollection.find(query).toArray();
+                console.log(result);
                 res.send(result);
             } catch (error) {
                 console.error(error);
